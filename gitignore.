@@ -1,0 +1,11 @@
+# Node
+node_modules/
+.env
+
+# React
+client/node_modules/
+client/build/
+
+# Python (אם תשתמש)
+__pycache__/
+*.pyc
