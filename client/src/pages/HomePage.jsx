@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import "../CSS/HomePage.css";
+import logo from "../assets/logo.png";
 
 function HomePage() {
   const [email, setEmail] = useState("");
@@ -33,38 +35,46 @@ function HomePage() {
   };
 
   return (
-    <div>
-      <h1>QuizMeUp – Home Page</h1>
+    <div className="home-container">
+      <form className="home-form" onSubmit={handleLogin}>
+        <img src={logo} alt="QuizMeUp logo" className="home-logo" />
+        <h2 className="home-subtitle">Sign In</h2>
 
-      <form onSubmit={handleLogin}>
-        <h2>Sign In</h2>
         <input
           type="email"
           placeholder="Email"
+          className="home-input"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <br />
         <input
           type="password"
           placeholder="Password"
+          className="home-input"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <br />
-        <button type="submit">Sign In</button>
+        <button type="submit" className="home-button">
+          Sign In
+        </button>
+
+        <p className="home-link">
+          Don’t have an account?{" "}
+          <span onClick={() => navigate("/register")}>Register</span>
+        </p>
+
+        <button
+          type="button"
+          className="home-button guest"
+          onClick={handleGuest}
+        >
+          Continue as Guest
+        </button>
+
+        {errorMsg && <p className="home-error">{errorMsg}</p>}
       </form>
-
-      <p>
-        Don’t have an account?{" "}
-        <button onClick={() => navigate("/register")}>Register</button>
-      </p>
-
-      <hr />
-      <button onClick={handleGuest}>Continue as Guest</button>
-      {errorMsg && <p style={{ color: "red" }}>{errorMsg}</p>}
     </div>
   );
 }

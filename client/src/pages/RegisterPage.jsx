@@ -1,54 +1,49 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import "../CSS/RegisterPage.css";
 
 function RegisterPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
-  const navigate = useNavigate();
 
-  const handleRegister = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setErrorMsg("");
-    try {
-      const res = await fetch("http://localhost:5001/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Registration failed");
-      localStorage.setItem("userEmail", email);
-      navigate("/menu");
-    } catch (err) {
-      setErrorMsg(err.message);
-    }
+    // כאן תוכל לשלב שליחת הבקשה לשרת
+    console.log({ name, email, password });
   };
 
   return (
-    <div>
-      <h1>Register</h1>
-      <form onSubmit={handleRegister}>
+    <div className="register-container">
+      <form className="register-form" onSubmit={handleSubmit}>
+        <h2 className="register-title">Sign Up</h2>
+        <input
+          type="text"
+          placeholder="Full Name"
+          className="register-input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
         <input
           type="email"
           placeholder="Email"
+          className="register-input"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          required
         />
-        <br />
         <input
           type="password"
           placeholder="Password"
+          className="register-input"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          required
         />
-        <br />
-        <button type="submit">Register</button>
+        <button className="register-button" type="submit">
+          Register
+        </button>
+        <p className="login-link">
+          Already have an account? <a href="/login">Log in</a>
+        </p>
       </form>
-      {errorMsg && <p style={{ color: "red" }}>{errorMsg}</p>}
     </div>
   );
 }

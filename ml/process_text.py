@@ -1,88 +1,121 @@
 import spacy
-from transformers import T5ForConditionalGeneration, T5Tokenizer
-import random
-import sys
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 import json
+import sys
+import random
+import re
 
-# Load spaCy and T5
+# Load spaCy
 nlp = spacy.load("en_core_web_sm")
-model_name = "valhalla/t5-base-qg-hl"
-tokenizer = T5Tokenizer.from_pretrained(model_name)
-model = T5ForConditionalGeneration.from_pretrained(model_name)
 
-def highlight_answer(sentence):
-    # נשתמש ב־spaCy כדי להדגיש מילה משמעותית במשפט (לשאלה אמריקאית)
+# Load T5 for question generation
+qg_model_id = "valhalla/t5-base-qg-hl"
+qg_tokenizer = AutoTokenizer.from_pretrained(qg_model_id)
+qg_model = AutoModelForSeq2SeqLM.from_pretrained(qg_model_id)
+qg_pipe = pipeline("text2text-generation", model=qg_model, tokenizer=qg_tokenizer)
+
+# Load LaMini-T5 for distractor generation
+distractor_model_id = "MBZUAI/LaMini-T5-738M"
+distractor_tokenizer = AutoTokenizer.from_pretrained(distractor_model_id)
+distractor_model = AutoModelForSeq2SeqLM.from_pretrained(distractor_model_id)
+distractor_pipe = pipeline("text2text-generation", model=distractor_model, tokenizer=distractor_tokenizer)
+
+def extract_focus_term(sentence):
     doc = nlp(sentence)
     for ent in doc.ents:
-        if ent.label_ in {"PERSON", "ORG", "GPE", "DATE"}:
-            return sentence.replace(ent.text, f"<hl> {ent.text} <hl>"), ent.text
-    return sentence, None  # אין ישות רלוונטית – נחזור למשפט עצמו
+        return ent
+    for chunk in doc.noun_chunks:
+        if len(chunk.text.strip().split()) > 1:
+            return chunk
+    for token in doc:
+        if token.dep_ in {"nsubj", "dobj", "pobj"} and token.pos_ in {"NOUN", "PROPN"}:
+            return token
+    return None
 
-def generate_mc_question(sentence):
-    # הדגשת התשובה בתוך המשפט
-    highlighted_sentence, answer = highlight_answer(sentence)
-    if not answer:
-        return None  # דלג אם לא נמצא מה להדגיש
+def highlight(sentence, term):
+    return sentence.replace(term.text, f"<hl> {term.text} <hl>")
 
-    input_text = f"generate question: {highlighted_sentence}"
-    input_ids = tokenizer.encode(input_text, return_tensors="pt")
-    output = model.generate(input_ids, max_length=64, num_beams=4, early_stopping=True)
-    question = tokenizer.decode(output[0], skip_special_tokens=True)
+def generate_question(sentence_with_hl):
+    prompt = f"generate question: {sentence_with_hl}"
+    result = qg_pipe(prompt, max_length=64, num_beams=4, early_stopping=True)[0]["generated_text"]
+    return result.strip()
 
-    # ניצור distractors פשוטים (ניתן לשפר בהמשך עם מודל נוסף)
-    fake_answers = ["Napoleon", "New York", "1955", "Isaac Newton"]
-    choices = random.sample([answer] + fake_answers, 4)
+def generate_raw_distractor_output(question, correct_answer, max_attempts=3):
+    distractors = []
 
-    return {
-        "type": "multiple_choice",
-        "question": question,
-        "choices": choices,
-        "answer": answer,
-        "source": sentence
-    }
+    def clean(text):
+        parts = re.split(r"\d+\.\s*", text)
+        cleaned = []
+        for part in parts:
+            choice = part.strip()
+            if not choice:
+                continue
+            if correct_answer.lower() in choice.lower():
+                continue
+            # מניעת כפילויות (case-insensitive)
+            if choice.lower() not in [d.lower() for d in distractors + cleaned]:
+                cleaned.append(choice)
+        return cleaned
 
-def generate_tf_question(sentence):
-    # נהפוך את המשפט לאי-אמת על ידי שינוי מילה אחת (פשוט לצורך הדוגמה)
-    false_sentence = sentence.replace("is", "is not", 1)
-    if false_sentence == sentence:
-        return None
+    attempt = 0
+    while len(distractors) < 3 and attempt < max_attempts:
+        prompt = (
+            f"Question: {question}\n"
+            f"Correct answer: {correct_answer}\n"
+            f"Based on the question and the correct answer,\n"
+            f"Provide only 3 different, short and reasonable incorrect answers.\n"
+        )
+        try:
+            result = distractor_pipe(prompt, max_length=100, num_return_sequences=1)[0]["generated_text"]
+            new_distractors = clean(result)
+            distractors.extend(new_distractors)
 
-    label = random.choice([True, False])
-    final_sentence = sentence if label else false_sentence
+            # שמירה על ייחודיות סופית
+            seen = set()
+            distractors = [x for x in distractors if not (x.lower() in seen or seen.add(x.lower()))]
 
-    return {
-        "type": "true_false",
-        "question": f"True or False: {final_sentence}",
-        "answer": "True" if label else "False",
-        "source": sentence
-    }
+        except Exception as e:
+            break
 
-def generate_questions(text):
+        attempt += 1
+
+    return distractors[:3]
+
+
+
+def generate_quiz(text):
     doc = nlp(text)
-    results = []
+    quiz = []
 
     for sent in doc.sents:
         sentence = sent.text.strip()
         if len(sentence) < 20:
             continue
 
-        if random.random() < 0.5:
-            q = generate_mc_question(sentence)
-        else:
-            q = generate_tf_question(sentence)
+        term = extract_focus_term(sentence)
+        if not term:
+            continue
 
-        if q:
-            results.append(q)
+        highlighted = highlight(sentence, term)
+        question_text = generate_question(highlighted)
+        correct_answer = term.text
+        distractor_output = generate_raw_distractor_output(question_text, correct_answer)
 
-    return results
+        if len(distractor_output) >= 2:
+            quiz.append({
+                "type": "multiple_choice",
+                "question": question_text,
+                "choices": [correct_answer] + distractor_output,
+                "answer": correct_answer
+            })
 
+    return quiz
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print(json.dumps({"error": "No text provided"}))
+        print(json.dumps({"error": "No input text provided"}))
         sys.exit(1)
 
     input_text = sys.argv[1]
-    questions = generate_questions(input_text)
-
-    print(json.dumps(questions, ensure_ascii=False))
+    quiz_data = generate_quiz(input_text)
+    print(json.dumps(quiz_data, indent=2, ensure_ascii=False))

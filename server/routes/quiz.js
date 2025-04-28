@@ -6,7 +6,7 @@ const Quiz = require("../models/Quiz");
 const router = express.Router();
 
 router.post("/generate-quiz", (req, res) => {
-  const { content, email } = req.body;
+  const { content, email, textId } = req.body;
   const userEmail = email || "Guest";
 
   if (!content) {
@@ -28,6 +28,7 @@ router.post("/generate-quiz", (req, res) => {
 
       const newQuiz = new Quiz({
         email: userEmail,
+        textId,
         originalText: content,
         questions,
       });
@@ -40,6 +41,32 @@ router.post("/generate-quiz", (req, res) => {
       res.status(500).json({ error: "Invalid Python response" });
     }
   });
+});
+
+// Route to fetch quizzes by textId
+router.get("/quizzes/by-text-id/:textId", async (req, res) => {
+  const { textId } = req.params;
+
+  try {
+    const quizzes = await Quiz.find({ textId }).sort({ createdAt: -1 });
+    res.json({ quizzes });
+  } catch (err) {
+    console.error("Error fetching quizzes by textId:", err);
+    res.status(500).json({ error: "Failed to fetch quizzes" });
+  }
+});
+
+// GET /quiz/by-user/:email
+router.get("/by-user/:email", async (req, res) => {
+  // console.log("📩 email param:", req.params.email);
+  try {
+    const quizzes = await Quiz.find({ email: req.params.email }).sort({
+      createdAt: -1,
+    });
+    res.json(quizzes);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch quizzes" });
+  }
 });
 
 module.exports = router;

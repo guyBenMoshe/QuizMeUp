@@ -12,6 +12,7 @@ router.post("/text", async (req, res) => {
 
     res.json({
       message: "Text saved successfully!",
+      _id: newText._id, // ← נוספה שורה זו
       preview: content.slice(0, 50) + "...",
     });
   } catch (err) {

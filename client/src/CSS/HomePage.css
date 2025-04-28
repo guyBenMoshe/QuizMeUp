@@ -1,0 +1,82 @@
+.home-container {
+  min-height: 100vh;
+  background: linear-gradient(to right, #fc466b, #3f5efb);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.home-form {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.home-logo {
+  width: 300px;
+  margin-bottom: 1rem;
+}
+
+.home-subtitle {
+  font-size: 1.25rem;
+  color: #555;
+  margin-bottom: 1.5rem;
+}
+
+.home-input {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.home-button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #ff6f61;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 0.5rem;
+}
+
+.home-button:hover {
+  background-color: #e85c50;
+}
+
+.home-button.guest {
+  background-color: #6a1b9a;
+}
+
+.home-button.guest:hover {
+  background-color: #4a148c;
+}
+
+.home-link {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.home-link span {
+  color: #007bff;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.home-error {
+  color: red;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}

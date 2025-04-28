@@ -1,0 +1,105 @@
+.history-container {
+  min-height: 100vh;
+  background: linear-gradient(to right, #c2e9fb, #a1c4fd);
+  padding: 2rem;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.history-title {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  color: #333;
+}
+
+.history-error {
+  color: red;
+  text-align: center;
+}
+
+.history-list {
+  list-style: none;
+  padding: 0;
+  max-width: 900px;
+  margin: auto;
+}
+
+.history-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.card-header p {
+  margin: 0.3rem 0;
+}
+
+.preview-text {
+  font-style: italic;
+  color: #555;
+}
+
+.card-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.card-buttons button {
+  padding: 0.5rem 1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background-color: #4a90e2;
+  color: white;
+  transition: background-color 0.3s;
+}
+
+.card-buttons button:hover {
+  background-color: #357abd;
+}
+
+.expanded-quiz {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.question-block {
+  background: #f9f9f9;
+  padding: 1rem 1.2rem;
+  border-left: 5px solid #4a90e2;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.question-block strong {
+  font-size: 1.1rem;
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.question-block ul {
+  padding-left: 1.2rem;
+  margin: 0;
+}
+
+.question-block li {
+  margin-bottom: 0.4rem;
+  line-height: 1.4;
+}
+
+.correct-choice {
+  font-weight: bold;
+  color: #388e3c;
+  background-color: #e8f5e9;
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  display: inline-block;
+}

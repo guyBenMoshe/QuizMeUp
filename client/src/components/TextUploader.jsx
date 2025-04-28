@@ -1,15 +1,16 @@
 import React, { useState } from "react";
+import "../CSS/TextUploader.css";
 
 function TextUploader() {
   const [text, setText] = useState("");
   const [response, setResponse] = useState("");
   const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [textId, setTextId] = useState(null);
 
   const email = localStorage.getItem("userEmail");
 
-  const handleTextChange = (e) => {
-    setText(e.target.value);
-  };
+  const handleTextChange = (e) => setText(e.target.value);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -28,6 +29,19 @@ function TextUploader() {
       if (data.text) {
         setText(data.text);
         setResponse("✅ File uploaded and text extracted");
+
+        const saveRes = await fetch("http://localhost:5001/api/text", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: data.text, email }),
+        });
+
+        const saved = await saveRes.json();
+        if (saveRes.ok && saved._id) {
+          setTextId(saved._id);
+        } else {
+          setResponse("❌ Failed to save extracted text");
+        }
       } else {
         setResponse("❌ Failed to extract text from file");
       }
@@ -38,13 +52,16 @@ function TextUploader() {
   };
 
   const handleGenerateQuiz = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || !textId) return;
+
+    setIsLoading(true);
+    setResponse("");
 
     try {
       const res = await fetch("http://localhost:5001/api/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: text, email }),
+        body: JSON.stringify({ content: text, email, textId }),
       });
 
       const data = await res.json();
@@ -57,51 +74,66 @@ function TextUploader() {
     } catch (err) {
       console.error("Quiz generation error:", err);
       setResponse("Error generating quiz");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div>
-      <h2>Upload or Paste Text</h2>
+    <div className="upload-container">
+      <div className="upload-card">
+        <h2>Upload or Paste Text</h2>
 
-      <textarea
-        rows="8"
-        cols="60"
-        placeholder="Paste or write your text here..."
-        value={text}
-        onChange={handleTextChange}
-      />
-      <br />
-      <input type="file" accept=".pdf,.docx" onChange={handleFileUpload} />
-      <br />
-      <button onClick={handleGenerateQuiz}>Generate Quiz</button>
-      <br />
-      {response && <p>{response}</p>}
+        <textarea
+          rows="8"
+          placeholder="Paste or write your text here..."
+          value={text}
+          onChange={handleTextChange}
+          className="upload-textarea"
+        />
 
-      {questions.length > 0 && (
-        <div>
-          <h3>Generated Questions:</h3>
-          <ol>
-            {questions.map((q, i) => (
-              <li key={i}>
-                <strong>{q.question}</strong>
-                {q.type === "multiple_choice" && (
-                  <ul>
-                    {q.choices.map((choice, idx) => (
-                      <li key={idx}>{choice}</li>
-                    ))}
-                  </ul>
-                )}
-                {q.type === "true_false" && (
-                  <p>
-                    <em>(True/False)</em>
-                  </p>
-                )}
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
+        <input
+          type="file"
+          accept=".pdf,.docx"
+          onChange={handleFileUpload}
+          className="upload-file"
+        />
+
+        <button
+          onClick={handleGenerateQuiz}
+          className="upload-button"
+          disabled={isLoading}
+        >
+          {isLoading ? "Generating..." : "Generate Quiz"}
+        </button>
+
+        {response && <p className="upload-response">{response}</p>}
+
+        {questions.length > 0 && (
+          <div className="question-list">
+            <h3>Generated Questions:</h3>
+            <ol>
+              {questions.map((q, i) => (
+                <li key={i}>
+                  <strong>{q.question}</strong>
+                  {q.type === "multiple_choice" && (
+                    <ul>
+                      {q.choices.map((choice, idx) => (
+                        <li key={idx}>{choice}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {q.type === "true_false" && (
+                    <p>
+                      <em>(True/False)</em>
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
