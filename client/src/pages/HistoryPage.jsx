@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import "../CSS/HistoryPage.css";
+import { Link } from "react-router-dom";
 
 function HistoryPage() {
   const [quizzes, setQuizzes] = useState([]);
@@ -30,7 +31,7 @@ function HistoryPage() {
   const copyQuizLink = (quizId) => {
     const link = `${window.location.origin}/quiz/${quizId}`;
     navigator.clipboard.writeText(link).then(() => {
-      alert("Link copied to clipboard!");
+      alert("Link to interactive quiz copied to clipboard!");
     });
   };
 
@@ -86,6 +87,10 @@ function HistoryPage() {
                 <button onClick={() => copyQuizLink(quiz._id)}>
                   Share Link
                 </button>
+
+                <Link to={`/quiz/${quiz._id}`}>
+                  <button>Start Quiz</button>
+                </Link>
               </div>
 
               {index === expandedIndex && (

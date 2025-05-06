@@ -52,16 +52,38 @@ function TextUploader() {
   };
 
   const handleGenerateQuiz = async () => {
-    if (!text.trim() || !textId) return;
+    if (!text.trim()) return; // אם אין טקסט בכלל, אין מה לעשות
 
     setIsLoading(true);
     setResponse("");
 
     try {
+      let currentTextId = textId;
+
+      // אם אין textId (כלומר - טקסט חופשי בלבד), ניצור עכשיו
+      if (!currentTextId) {
+        const saveRes = await fetch("http://localhost:5001/api/text", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: text, email }),
+        });
+
+        const saved = await saveRes.json();
+        if (saveRes.ok && saved._id) {
+          currentTextId = saved._id;
+          setTextId(saved._id); // נעדכן גם בסטייט
+        } else {
+          setResponse("❌ Failed to save text before quiz generation");
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // עכשיו יש לנו textId (בין אם מהעלאת קובץ ובין אם מטקסט חופשי)
       const res = await fetch("http://localhost:5001/api/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: text, email, textId }),
+        body: JSON.stringify({ content: text, email, textId: currentTextId }),
       });
 
       const data = await res.json();

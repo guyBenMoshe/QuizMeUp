@@ -5,6 +5,7 @@ import RegisterPage from "./pages/RegisterPage";
 import ListPage from "./pages/ListPage";
 import TextUploader from "./components/TextUploader";
 import HistoryPage from "./pages/HistoryPage";
+import QuizPlay from "./pages/QuizPlay";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="/menu" element={<ListPage />} />
         <Route path="/upload" element={<TextUploader />} />
         <Route path="/history" element={<HistoryPage />} />
+        <Route path="/quiz/:quizId" element={<QuizPlay />} />
       </Routes>
     </Router>
   );
