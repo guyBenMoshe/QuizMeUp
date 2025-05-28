@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import "../CSS/HistoryPage.css";
 import { Link } from "react-router-dom";
+import { Eye, EyeOff, Download, Share2, ArrowLeft } from "lucide-react";
 
 function HistoryPage() {
   const [quizzes, setQuizzes] = useState([]);
@@ -43,83 +43,102 @@ function HistoryPage() {
           `http://localhost:5001/api/by-user/${encodedEmail}`
         );
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to fetch quizzes");
         setQuizzes(data);
       } catch (err) {
-        setError(err.message);
+        console.error(err);
+        setError("Failed to fetch quiz history.");
       }
     };
-
-    if (email) fetchQuizzes();
+    fetchQuizzes();
   }, [email]);
 
   return (
-    <div className="history-container">
-      <h2 className="history-title">Your Quiz History</h2>
-      {error && <p className="history-error">{error}</p>}
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-indigo-200 p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-4xl font-bold text-purple-800">Quiz History</h2>
+          <Link
+            to="/menu"
+            className="flex items-center gap-2 text-purple-700 border border-purple-500 px-4 py-2 rounded-lg hover:bg-purple-100 transition"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to Menu
+          </Link>
+        </div>
 
-      {quizzes.length === 0 ? (
-        <p>No quizzes created yet.</p>
-      ) : (
-        <ul className="history-list">
-          {quizzes.map((quiz, index) => (
-            <li key={index} className="history-card">
-              <div className="card-header">
-                <strong>{new Date(quiz.createdAt).toLocaleString()}</strong>
-                <p>{quiz.questions?.length || 0} questions</p>
-                <p className="preview-text">
-                  Preview:{" "}
-                  {quiz.questions?.[0]?.question || "No question available"}
-                </p>
-              </div>
+        {error && <p className="text-red-600 text-center mb-4">{error}</p>}
 
-              <div className="card-buttons">
-                <button
-                  onClick={() =>
-                    setExpandedIndex(index === expandedIndex ? null : index)
-                  }
-                >
-                  {index === expandedIndex ? "Close" : "See More"}
-                </button>
-                <button onClick={() => downloadQuizAsPDF(index)}>
-                  Download PDF
-                </button>
-                <button onClick={() => copyQuizLink(quiz._id)}>
-                  Share Link
-                </button>
-
-                <Link to={`/quiz/${quiz._id}`}>
-                  <button>Start Quiz</button>
-                </Link>
-              </div>
-
-              {index === expandedIndex && (
-                <div className="expanded-quiz" id={`quiz-preview-${index}`}>
-                  {quiz.questions.map((q, i) => (
-                    <div key={i} className="question-block">
-                      <strong>
-                        {i + 1}. {q.question}
-                      </strong>
-                      <ul>
-                        {q.choices.map((choice, j) => (
-                          <li
-                            key={j}
-                            className={
-                              choice === q.answer ? "correct-choice" : ""
-                            }
-                          >
-                            {choice}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
+        {quizzes.length === 0 ? (
+          <p className="text-gray-600 text-center">No quizzes found.</p>
+        ) : (
+          <div className="space-y-6">
+            {quizzes.map((quiz, index) => (
+              <div
+                key={index}
+                className="bg-white/60 backdrop-blur-lg rounded-xl shadow p-6"
+              >
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-semibold text-purple-800">
+  {quiz.questions[0]?.question.slice(0, 50) + (quiz.questions[0]?.question.length > 50 ? '...' : '')}
+  <span className="block text-sm text-gray-600 font-normal">
+    {new Date(quiz.createdAt).toLocaleString()} • {quiz.questions.length} questions
+  </span>
+</h3>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() =>
+                        setExpandedIndex(expandedIndex === index ? null : index)
+                      }
+                      className="text-purple-600 hover:text-purple-800"
+                    >
+                      {expandedIndex === index ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => downloadQuizAsPDF(index)}
+                      className="text-purple-600 hover:text-purple-800"
+                    >
+                      <Download className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => copyQuizLink(quiz._id)}
+                      className="text-purple-600 hover:text-purple-800"
+                    >
+                      <Share2 className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+
+                {expandedIndex === index && (
+                  <div id={`quiz-preview-${index}`} className="mt-4 space-y-4 text-gray-700">
+                    {quiz.questions.map((q, i) => (
+                      <div key={i}>
+                        <p className="font-medium">
+                          {i + 1}. {q.question}
+                        </p>
+                        {q.type === "multiple_choice" && (
+                          <ul className="list-disc ml-6 text-sm text-gray-600">
+                            {q.choices.map((c, idx) => (
+                              <li key={idx}>{c}</li>
+                            ))}
+                          </ul>
+                        )}
+                        {q.type === "true_false" && (
+                          <p className="text-sm text-gray-500">
+                            <em>(True/False)</em>
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

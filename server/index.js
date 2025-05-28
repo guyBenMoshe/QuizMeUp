@@ -13,30 +13,50 @@ mongoose
 
 //---------------------------
 
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const cors = require("cors");
+
+const app = express();
+const server = http.createServer(app);
+
+// define the socket server
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
+
+const setupCompetitionSocket = require("./socket/competition");
+setupCompetitionSocket(io);
+
+// ------------------------
+
 const authRoutes = require("./routes/auth");
 const uploadRoutes = require("./routes/upload");
 const textRoutes = require("./routes/text");
 const quizRoutes = require("./routes/quiz");
 
-const express = require("express");
-const cors = require("cors");
-
-const app = express();
+//use cors middleware
 app.use(cors());
 app.use(express.json());
 
+//routes
 app.use("/api", authRoutes);
 app.use("/api", uploadRoutes);
 app.use("/api", textRoutes);
 app.use("/api", quizRoutes);
 
-//// Routes
+// default route
 app.get("/", (req, res) => {
   res.send("QuizMeUp server is running!");
 });
 
+// Start the server
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

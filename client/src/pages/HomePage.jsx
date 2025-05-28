@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import "../CSS/HomePage.css";
+import { useNavigate, Link } from "react-router-dom";
 import logo from "../assets/logo.png";
+import { LogIn, User, UserPlus } from "lucide-react";
 
 function HomePage() {
   const [email, setEmail] = useState("");
@@ -35,46 +35,69 @@ function HomePage() {
   };
 
   return (
-    <div className="home-container">
-      <form className="home-form" onSubmit={handleLogin}>
-        <img src={logo} alt="QuizMeUp logo" className="home-logo" />
-        <h2 className="home-subtitle">Sign In</h2>
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-indigo-200 flex items-center justify-center p-6">
+      <div className="bg-white/40 backdrop-blur-md shadow-2xl rounded-2xl p-10 w-full max-w-md animate-fade-in">
+        <div className="flex justify-center mb-6">
+          <img src={logo} alt="QuizMeUp Logo" className="h-30 drop-shadow-lg animate-[float_2s_ease-in-out_infinite]" />
+        </div>
+        {/* <h1 className="text-4xl font-bold text-center text-purple-800 mb-2">
+          QuizMeUp
+        </h1>
+        <p className="text-center text-gray-700 mb-6 text-sm">
+          Smart quiz generation, beautiful interface.
+        </p> */}
 
-        <input
-          type="email"
-          placeholder="Email"
-          className="home-input"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          className="home-input"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit" className="home-button">
-          Sign In
-        </button>
+        <form onSubmit={handleLogin} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 shadow-sm"
+              placeholder="your@email.com"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-1">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 shadow-sm"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          {errorMsg && <div className="text-red-600 text-center text-sm">{errorMsg}</div>}
 
-        <p className="home-link">
-          Don’t have an account?{" "}
-          <span onClick={() => navigate("/register")}>Register</span>
-        </p>
+          <button
+            type="submit"
+            className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-xl shadow-md transition duration-200"
+          >
+            <LogIn className="w-5 h-5" /> Login
+          </button>
+        </form>
 
-        <button
-          type="button"
-          className="home-button guest"
-          onClick={handleGuest}
-        >
-          Continue as Guest
-        </button>
+        <div className="mt-4 text-center">
+          <button
+            onClick={handleGuest}
+            className="text-sm text-purple-700 hover:underline flex items-center justify-center gap-1"
+          >
+            <User className="w-4 h-4" /> Continue as Guest
+          </button>
+        </div>
 
-        {errorMsg && <p className="home-error">{errorMsg}</p>}
-      </form>
+        <div className="mt-2 text-center">
+          <Link
+            to="/register"
+            className="text-sm text-purple-700 hover:underline flex items-center justify-center gap-1"
+          >
+            <UserPlus className="w-4 h-4" /> Don't have an account? Register
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
