@@ -1,165 +1,117 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { io } from "socket.io-client";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+// import { io } from "socket.io-client";
 
-const socket = io("http://localhost:5001");
+// const socket = io("http://localhost:5001");
+import { socket } from "../socket";
 
 function LiveQuizPage() {
-  const { roomCode } = useParams();
-  const navigate = useNavigate();
-  const query = new URLSearchParams(useLocation().search);
-  const quizId = query.get("quizId");
-
-  const [quiz, setQuiz] = useState(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [question, setQuestion] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [answered, setAnswered] = useState(false);
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [scores, setScores] = useState({});
 
-  const [timer, setTimer] = useState(30);
-  const [score, setScore] = useState(0);
-  const [finalScores, setFinalScores] = useState(null);
-
-  const username = localStorage.getItem("userEmail") || "Guest";
-
-  const handleAnswerSelection = (choice) => {
-    setSelectedAnswer(choice);
-    socket.emit("answered", { roomCode, username });
-  };
+  const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const roomCode = queryParams.get("roomCode");
 
   useEffect(() => {
-    const fetchQuiz = async () => {
-      try {
-        const res = await fetch(`http://localhost:5001/api/quiz/${quizId}`);
-        const data = await res.json();
-        setQuiz(data);
-      } catch (err) {
-        console.error("Failed to load quiz", err);
-      }
+    // const userName = localStorage.getItem("userName") || "Guest";
+
+    const handleNewQuestion = ({ question, index, scores }) => {
+      console.log("📥 Received newQuestion from server:", question);
+      setQuestion(question);
+      setQuestionIndex(index);
+      setSelectedAnswer(null);
+      setAnswered(false);
+      if (scores) setScores(scores);
     };
 
-    if (quizId) fetchQuiz();
-  }, [quizId]);
+    const handleQuizEnded = ({ scores }) => {
+      console.log("🏁 Quiz ended!");
+      navigate("/quiz-results", { state: { scores } });
+    };
 
-  const handleNext = useCallback(() => {
-    const question = quiz.questions[currentIndex];
-    if (selectedAnswer && selectedAnswer === question.answer) {
-      setScore((prev) => prev + 1);
-    }
+    // בקשה לשאלה הנוכחית
+    socket.emit("getCurrentQuestion", { roomCode });
 
-    if (currentIndex + 1 < quiz.questions.length) {
-      setCurrentIndex((prev) => prev + 1);
-      setTimer(30);
-      setSelectedAnswer(null);
-    } else {
-      socket.emit("submit-score", { roomCode, username, score });
-    }
-  }, [quiz, currentIndex, selectedAnswer, roomCode, username, score]);
-
-  useEffect(() => {
-    if (timer === 0) {
-      handleNext();
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setTimer((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [timer, handleNext]);
-
-  useEffect(() => {
-    socket.on("next-question", () => {
-      handleNext();
-    });
-    return () => socket.off("next-question");
-  }, [handleNext]);
-
-  useEffect(() => {
-    socket.on("show-scores", (scores) => {
-      setFinalScores(scores);
-    });
+    // מאזינים רק פעם אחת
+    console.log("🔔 Listening to newQuestion");
+    socket.on("newQuestion", handleNewQuestion);
+    socket.on("quizEnded", handleQuizEnded);
 
     return () => {
-      socket.off("show-scores");
+      socket.off("newQuestion", handleNewQuestion);
+      socket.off("quizEnded", handleQuizEnded);
     };
-  }, []);
+  }, [navigate, roomCode]);
 
-  if (!quiz) return <div className="p-10 text-center">Loading quiz...</div>;
-
-  if (finalScores) {
-    return (
-      <div className="min-h-screen bg-green-100 flex flex-col items-center justify-center p-6">
-        <div className="bg-white rounded-xl shadow-xl p-8 w-full max-w-lg text-center">
-          <h2 className="text-3xl font-bold mb-4 text-green-700">
-            🏆 Final Scores
-          </h2>
-          <ul className="space-y-2 text-lg">
-            {finalScores
-              .sort((a, b) => b.score - a.score)
-              .map((player, i) => (
-                <li key={player.username}>
-                  {i + 1}. {player.username}: <strong>{player.score}</strong>
-                </li>
-              ))}
-          </ul>
-          <button
-            className="mt-6 bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700"
-            onClick={() => navigate("/menu")}
-          >
-            Back to Menu
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (currentIndex >= quiz.questions.length) {
-    return <div className="p-10 text-center">Submitting your score...</div>;
-  }
-
-  const question = quiz.questions[currentIndex];
+  const handleAnswer = (answer) => {
+    if (answered) return;
+    setSelectedAnswer(answer);
+    setAnswered(true);
+    socket.emit("submitAnswer", { roomCode, answer });
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-100 to-orange-200 flex flex-col items-center justify-center p-6">
-      <div className="bg-white rounded-xl shadow-xl p-8 w-full max-w-2xl text-center">
-        <h2 className="text-2xl font-bold mb-4">Question {currentIndex + 1}</h2>
-        <p className="text-lg mb-6">{question.question}</p>
-
-        {question.type === "multiple_choice" && (
-          <div className="grid grid-cols-1 gap-3">
-            {question.choices.map((choice, i) => (
-              <button
-                key={i}
-                onClick={() => handleAnswerSelection(choice)}
-                className={`border px-4 py-2 rounded ${
-                  selectedAnswer === choice
-                    ? "bg-indigo-200"
-                    : "hover:bg-gray-100"
-                }`}
-              >
-                {choice}
-              </button>
-            ))}
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-indigo-200 p-6">
+      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-8">
+        {question ? (
+          <>
+            <h2 className="text-3xl font-bold text-purple-800 mb-6">
+              Question {questionIndex + 1}
+            </h2>
+            <p className="text-xl text-purple-700 mb-4">{question.question}</p>
+            <div className="space-y-4">
+              {question.choices.map((option, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleAnswer(option)}
+                  className={`w-full px-4 py-3 border rounded-lg transition text-left text-lg font-medium ${
+                    selectedAnswer === option
+                      ? "bg-purple-200 border-purple-600 text-purple-900"
+                      : "border-purple-500 text-purple-700 hover:bg-purple-100"
+                  }`}
+                  disabled={answered}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+            {answered && (
+              <p className="mt-6 text-center text-green-600 font-semibold">
+                Answer submitted. Waiting for others...
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-center text-purple-600 text-xl">
+            Waiting for the first question...
+          </p>
         )}
 
-        {question.type === "true_false" && (
-          <div className="flex gap-4 justify-center mt-4">
-            {["True", "False"].map((val) => (
-              <button
-                key={val}
-                onClick={() => handleAnswerSelection(val)}
-                className={`border px-6 py-2 rounded ${
-                  selectedAnswer === val ? "bg-indigo-200" : "hover:bg-gray-100"
-                }`}
-              >
-                {val}
-              </button>
-            ))}
+        {Object.keys(scores).length >= 0 && (
+          <div className="mt-8 bg-purple-50 border border-purple-300 rounded-lg p-4 shadow-sm">
+            <h3 className="text-xl font-semibold text-purple-800 mb-3 text-center">
+              Live Scores
+            </h3>
+            <ul className="space-y-2">
+              {Object.entries(scores)
+                .sort((a, b) => b[1] - a[1])
+                .map(([name, score], idx) => (
+                  <li
+                    key={idx}
+                    className="flex justify-between text-lg text-purple-700 font-medium"
+                  >
+                    <span>{name}</span>
+                    <span>{score} pts</span>
+                  </li>
+                ))}
+            </ul>
           </div>
         )}
-
-        <p className="mt-6 text-sm text-gray-600">Time left: {timer} seconds</p>
       </div>
     </div>
   );

@@ -9,13 +9,18 @@ module.exports = {
       },
       animation: {
         float: "float 3s ease-in-out infinite",
+        "float-slow": "float-slow 10s ease-in-out infinite", // שם אחר!
       },
       keyframes: {
         float: {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-10px)" },
         },
-      }      
+        "float-slow": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-30px)" },
+        },
+      },
     },
   },
   plugins: [],

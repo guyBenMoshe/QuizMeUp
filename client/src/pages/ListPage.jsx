@@ -38,7 +38,7 @@ function ListPage() {
             onClick={() => navigate("/competition")}
             className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium shadow transition"
           >
-            <Trophy className="w-5 h-5" /> Start Competition
+            <Trophy className="w-5 h-5" /> Start/Join Competition
           </button>
         </div>
 

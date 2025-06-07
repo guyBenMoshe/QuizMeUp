@@ -1,57 +1,159 @@
+const competitions = {}; // זיכרון זמני למבחנים חיים
+
 module.exports = (io) => {
-  const activeRooms = {};
-  const roomState = {};
+  function emitUpdatedUserList(roomCode) {
+    const room = io.sockets.adapter.rooms.get(roomCode);
+    if (!room) return;
+
+    const users = Array.from(room)
+      .map((id) => io.sockets.sockets.get(id))
+      .filter((s) => s?.userName)
+      .map((s) => s.userName);
+
+    io.to(roomCode).emit("userList", users);
+  }
 
   io.on("connection", (socket) => {
-    console.log("✅ Client connected:", socket.id);
+    console.log("🟢 New client connected:", socket.id);
 
-    socket.on("join-room", ({ roomCode, username }) => {
+    socket.on("joinRoom", ({ roomCode, userName }, callback) => {
+      socket.userName = userName;
+      socket.roomCode = roomCode;
       socket.join(roomCode);
-      if (!activeRooms[roomCode]) activeRooms[roomCode] = [];
-      activeRooms[roomCode].push({ id: socket.id, username });
 
-      io.to(roomCode).emit("room-update", activeRooms[roomCode]);
+      console.log(`🔗 ${userName} joined room ${roomCode}`);
+
+      if (typeof callback === "function") {
+        const roomSize = io.sockets.adapter.rooms.get(roomCode)?.size || 0;
+        callback({ status: "joined", isHost: roomSize === 1 });
+      }
+
+      emitUpdatedUserList(roomCode);
     });
 
-    socket.on("start-quiz", ({ roomCode, quizId }) => {
-      console.log("📥 start-quiz received:", roomCode, quizId);
-      roomState[roomCode] = {
-        answeredUsers: new Set(),
-        totalPlayers: activeRooms[roomCode]?.length || 0,
-      };
-      io.to(roomCode).emit("quiz-started", { quizId });
-    });
+    // socket.on("leaveRoom", ({ roomCode }) => {
+    //   socket.leave(roomCode);
+    //   console.log(`❌ ${socket.userName} left room ${roomCode}`);
+    //   emitUpdatedUserList(roomCode);
+    // });
 
-    socket.on("answered", ({ roomCode, username }) => {
-      const state = roomState[roomCode];
-      if (!state) return;
+    socket.on("leaveRoom", ({ roomCode }) => {
+      // יציאה מהחדר
+      socket.leave(roomCode);
 
-      state.answeredUsers.add(username);
-      if (state.answeredUsers.size === state.totalPlayers) {
-        io.to(roomCode).emit("next-question");
-        state.answeredUsers.clear();
+      console.log(`❌ ${socket.userName} left room ${roomCode}`);
+
+      if (competitions[roomCode]) {
+        const comp = competitions[roomCode];
+
+        if (comp.answers?.[socket.id]) {
+          delete comp.answers[socket.id];
+        }
+
+        // הסרת השחקן מהניקוד
+        if (comp.scores?.[socket.userName]) {
+          delete comp.scores[socket.userName];
+        }
       }
-    });
 
-    socket.on("submit-score", ({ roomCode, username, score }) => {
-      if (!roomState[roomCode].scores) {
-        roomState[roomCode].scores = [];
-      }
-      roomState[roomCode].scores.push({ username, score });
-
-      if (
-        roomState[roomCode].scores.length === roomState[roomCode].totalPlayers
-      ) {
-        io.to(roomCode).emit("show-scores", roomState[roomCode].scores);
-      }
+      // שליחת רשימת משתמשים עדכנית
+      emitUpdatedUserList(roomCode);
     });
 
     socket.on("disconnect", () => {
-      for (const room in activeRooms) {
-        activeRooms[room] = activeRooms[room].filter((u) => u.id !== socket.id);
-        io.to(room).emit("room-update", activeRooms[room]);
+      console.log(`🔌 Disconnected: ${socket.id} (${socket.userName})`);
+      for (const roomCode of socket.rooms) {
+        if (roomCode !== socket.id) {
+          socket.leave(roomCode);
+          emitUpdatedUserList(roomCode);
+        }
       }
-      console.log("❌ Client disconnected:", socket.id);
+
+      for (const [roomCode, comp] of Object.entries(competitions)) {
+        if (comp.answers?.[socket.id]) {
+          delete comp.answers[socket.id];
+        }
+        if (comp.scores?.[socket.userName]) {
+          delete comp.scores[socket.userName];
+        }
+      }
+    });
+
+    socket.on("startQuiz", ({ roomCode, quiz }) => {
+      competitions[roomCode] = {
+        quiz,
+        currentQuestionIndex: 0,
+        answers: {},
+        scores: {},
+      };
+
+      const room = io.sockets.adapter.rooms.get(roomCode);
+      if (room) {
+        for (const socketId of room) {
+          const user = io.sockets.sockets.get(socketId);
+          if (user?.connected && user?.userName) {
+            competitions[roomCode].scores[user.userName] = 0;
+          }
+        }
+      }
+
+      io.to(roomCode).emit("startQuizClientSide", { roomCode });
+
+      const question = quiz.questions[0];
+      io.to(roomCode).emit("newQuestion", {
+        question,
+        index: 0,
+        scores: competitions[roomCode].scores,
+      });
+    });
+
+    socket.on("submitAnswer", ({ roomCode, answer }) => {
+      const comp = competitions[roomCode];
+      if (!comp || comp.answers[socket.id]) return;
+
+      const currentQ = comp.quiz.questions[comp.currentQuestionIndex];
+      const isCorrect = answer === currentQ.answer;
+
+      if (isCorrect) {
+        const username = socket.userName;
+        if (username) {
+          comp.scores[username] = (comp.scores[username] || 0) + 1;
+        }
+      }
+
+      comp.answers[socket.id] = true;
+
+      const totalPlayers = Object.keys(comp.scores).length;
+      const answeredCount = Object.keys(comp.answers).length;
+
+      if (answeredCount >= totalPlayers) {
+        comp.currentQuestionIndex++;
+
+        if (comp.currentQuestionIndex >= comp.quiz.questions.length) {
+          io.to(roomCode).emit("quizEnded", { scores: comp.scores });
+          delete competitions[roomCode];
+        } else {
+          comp.answers = {};
+          const nextQuestion = comp.quiz.questions[comp.currentQuestionIndex];
+          io.to(roomCode).emit("newQuestion", {
+            question: nextQuestion,
+            index: comp.currentQuestionIndex,
+            scores: comp.scores,
+          });
+        }
+      }
+    });
+
+    socket.on("getCurrentQuestion", ({ roomCode }) => {
+      const comp = competitions[roomCode];
+      if (!comp) return;
+
+      const question = comp.quiz.questions[comp.currentQuestionIndex];
+      socket.emit("newQuestion", {
+        question,
+        index: comp.currentQuestionIndex,
+        scores: comp.scores,
+      });
     });
   });
 };

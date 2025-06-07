@@ -10,6 +10,10 @@ run client:
 cd client
 npm start
 
-test eccount:
-benmosheg@gmail.com
-1234
+test eccounts (can also use "continue as a guest" for check multiple users):
+
+- benmosheg@gmail.com
+  1234
+
+- moshe@gmail.com
+  12345
