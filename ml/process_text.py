@@ -1,25 +1,29 @@
 import spacy
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
+import torch
 import json
 import sys
-import random
 import re
+from concurrent.futures import ThreadPoolExecutor
 
-# Load spaCy
+# Load NLP
 nlp = spacy.load("en_core_web_sm")
 
-# Load T5 for question generation
+# Detect GPU
+device = 0 if torch.cuda.is_available() else -1
+
+# Load models
 qg_model_id = "valhalla/t5-base-qg-hl"
 qg_tokenizer = AutoTokenizer.from_pretrained(qg_model_id)
 qg_model = AutoModelForSeq2SeqLM.from_pretrained(qg_model_id)
-qg_pipe = pipeline("text2text-generation", model=qg_model, tokenizer=qg_tokenizer)
+qg_pipe = pipeline("text2text-generation", model=qg_model, tokenizer=qg_tokenizer, device=device)
 
-# Load LaMini-T5 for distractor generation
 distractor_model_id = "MBZUAI/LaMini-T5-738M"
 distractor_tokenizer = AutoTokenizer.from_pretrained(distractor_model_id)
 distractor_model = AutoModelForSeq2SeqLM.from_pretrained(distractor_model_id)
-distractor_pipe = pipeline("text2text-generation", model=distractor_model, tokenizer=distractor_tokenizer)
+distractor_pipe = pipeline("text2text-generation", model=distractor_model, tokenizer=distractor_tokenizer, device=device)
 
+# NLP utils
 def extract_focus_term(sentence):
     doc = nlp(sentence)
     for ent in doc.ents:
@@ -35,12 +39,16 @@ def extract_focus_term(sentence):
 def highlight(sentence, term):
     return sentence.replace(term.text, f"<hl> {term.text} <hl>")
 
+# Core logic
 def generate_question(sentence_with_hl):
-    prompt = f"generate question: {sentence_with_hl}"
-    result = qg_pipe(prompt, max_length=64, num_beams=4, early_stopping=True)[0]["generated_text"]
-    return result.strip()
+    prompt = f"Write a natural, human-like multiple-choice question based on this sentence: {sentence_with_hl}"
+    try:
+        result = qg_pipe(prompt, max_length=72, num_beams=4, early_stopping=True)[0]["generated_text"]
+        return result.strip()
+    except Exception:
+        return None
 
-def generate_raw_distractor_output(question, correct_answer, max_attempts=3):
+def generate_distractors(question, correct_answer, max_attempts=2):
     distractors = []
 
     def clean(text):
@@ -52,7 +60,6 @@ def generate_raw_distractor_output(question, correct_answer, max_attempts=3):
                 continue
             if correct_answer.lower() in choice.lower():
                 continue
-            # מניעת כפילויות (case-insensitive)
             if choice.lower() not in [d.lower() for d in distractors + cleaned]:
                 cleaned.append(choice)
         return cleaned
@@ -62,55 +69,84 @@ def generate_raw_distractor_output(question, correct_answer, max_attempts=3):
         prompt = (
             f"Question: {question}\n"
             f"Correct answer: {correct_answer}\n"
-            f"Based on the question and the correct answer,\n"
-            f"Provide only 3 different, short and reasonable incorrect answers.\n"
+            f"Write 3 short but plausible and incorrect answers in a list format."
         )
         try:
-            result = distractor_pipe(prompt, max_length=100, num_return_sequences=1)[0]["generated_text"]
+            result = distractor_pipe(prompt, max_length=72)[0]["generated_text"]
             new_distractors = clean(result)
             distractors.extend(new_distractors)
-
-            # שמירה על ייחודיות סופית
             seen = set()
             distractors = [x for x in distractors if not (x.lower() in seen or seen.add(x.lower()))]
-
-        except Exception as e:
+        except Exception:
             break
-
         attempt += 1
 
     return distractors[:3]
 
+def normalize_answers(question, correct, distractors):
+    all_answers = [correct] + distractors
+    base_prompt = (
+        f"Format these answers for the following question so they all look consistent, concise (1–5 words), and natural:\n"
+        f"Question: {question}\n"
+        f"Answers:\n"
+    )
+    for i, ans in enumerate(all_answers):
+        base_prompt += f"{i+1}. {ans}\n"
+
+    prompt = base_prompt + "Return the list of formatted answers only."
+
+    try:
+        output = distractor_pipe(prompt, max_length=64)[0]["generated_text"]
+        formatted = [line.strip("- ").strip() for line in output.split("\n") if line.strip()]
+    except Exception:
+        return correct, distractors
+
+    if len(formatted) >= 3:
+        return formatted[0], formatted[1:4]
+    return correct, distractors
 
 
-def generate_quiz(text):
+def process_sentence(sentence):
+    sentence = sentence.strip()
+    if len(sentence) < 20:
+        return None
+
+    term = extract_focus_term(sentence)
+    if not term:
+        return None
+
+    highlighted = highlight(sentence, term)
+    question_text = generate_question(highlighted)
+    if not question_text:
+        return None
+
+    correct_answer = term.text
+    distractors = generate_distractors(question_text, correct_answer)
+
+    if len(distractors) >= 2:
+        correct_answer, distractors = normalize_answers(question_text, correct_answer, distractors)
+        return {
+            "type": "multiple_choice",
+            "question": question_text,
+            "choices": [correct_answer] + distractors,
+            "answer": correct_answer
+        }
+    return None
+
+def generate_quiz(text, max_workers=4):
     doc = nlp(text)
+    sentences = [sent.text for sent in doc.sents if len(sent.text.strip()) >= 20]
+
     quiz = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        results = executor.map(process_sentence, sentences)
 
-    for sent in doc.sents:
-        sentence = sent.text.strip()
-        if len(sentence) < 20:
-            continue
-
-        term = extract_focus_term(sentence)
-        if not term:
-            continue
-
-        highlighted = highlight(sentence, term)
-        question_text = generate_question(highlighted)
-        correct_answer = term.text
-        distractor_output = generate_raw_distractor_output(question_text, correct_answer)
-
-        if len(distractor_output) >= 2:
-            quiz.append({
-                "type": "multiple_choice",
-                "question": question_text,
-                "choices": [correct_answer] + distractor_output,
-                "answer": correct_answer
-            })
-
+    for q in results:
+        if q:
+            quiz.append(q)
     return quiz
 
+# Main
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print(json.dumps({"error": "No input text provided"}))
