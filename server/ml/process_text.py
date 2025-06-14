@@ -7,12 +7,8 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 
 # Load NLP
-try:
-    nlp = spacy.load("en_core_web_sm")
-except OSError:
-    from spacy.cli import download
-    download("en_core_web_sm")
-    nlp = spacy.load("en_core_web_sm")
+nlp = spacy.load("en_core_web_sm")
+
 # Detect GPU
 device = 0 if torch.cuda.is_available() else -1
 
