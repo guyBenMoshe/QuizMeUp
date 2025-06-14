@@ -3,3 +3,5 @@ spacy
 transformers
 tiktoken
 protobuf
+blobfile
+sentencepiece
