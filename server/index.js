@@ -46,7 +46,13 @@ const textRoutes = require("./routes/text");
 const quizRoutes = require("./routes/quiz");
 
 //use cors middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: ["https://quizmeup-client.onrender.com", "http://localhost:3000"],
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 //routes
