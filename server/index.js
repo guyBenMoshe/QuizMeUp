@@ -18,14 +18,20 @@ const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 
+// const allowedOrigins = [
+//   "http://localhost:3000", // בזמן פיתוח
+//   "https://quizmeup-client.onrender.com", // ה־frontend שלך ברנדר
+// ];
+
 const app = express();
 const server = http.createServer(app);
 
 // define the socket server
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: ["https://quizmeup-client.onrender.com", "http://localhost:3000"],
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
