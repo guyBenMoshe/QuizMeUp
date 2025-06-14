@@ -40,7 +40,7 @@ function HistoryPage() {
       try {
         const encodedEmail = encodeURIComponent(email);
         const res = await fetch(
-          `http://localhost:5001/api/by-user/${encodedEmail}`
+          `${process.env.REACT_APP_API_URL}/api/by-user/${encodedEmail}`
         );
         const data = await res.json();
         setQuizzes(data);
@@ -78,11 +78,13 @@ function HistoryPage() {
               >
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-semibold text-purple-800">
-  {quiz.questions[0]?.question.slice(0, 50) + (quiz.questions[0]?.question.length > 50 ? '...' : '')}
-  <span className="block text-sm text-gray-600 font-normal">
-    {new Date(quiz.createdAt).toLocaleString()} • {quiz.questions.length} questions
-  </span>
-</h3>
+                    {quiz.questions[0]?.question.slice(0, 50) +
+                      (quiz.questions[0]?.question.length > 50 ? "..." : "")}
+                    <span className="block text-sm text-gray-600 font-normal">
+                      {new Date(quiz.createdAt).toLocaleString()} •{" "}
+                      {quiz.questions.length} questions
+                    </span>
+                  </h3>
                   <div className="flex gap-3">
                     <button
                       onClick={() =>
@@ -112,7 +114,10 @@ function HistoryPage() {
                 </div>
 
                 {expandedIndex === index && (
-                  <div id={`quiz-preview-${index}`} className="mt-4 space-y-4 text-gray-700">
+                  <div
+                    id={`quiz-preview-${index}`}
+                    className="mt-4 space-y-4 text-gray-700"
+                  >
                     {quiz.questions.map((q, i) => (
                       <div key={i}>
                         <p className="font-medium">

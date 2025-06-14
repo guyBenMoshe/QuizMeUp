@@ -12,7 +12,7 @@ function RegisterPage() {
     e.preventDefault();
     setErrorMsg("");
     try {
-      const res = await fetch("http://localhost:5001/api/register", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -52,7 +52,9 @@ function RegisterPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          {errorMsg && <div className="text-red-600 text-center text-sm">{errorMsg}</div>}
+          {errorMsg && (
+            <div className="text-red-600 text-center text-sm">{errorMsg}</div>
+          )}
 
           <button
             type="submit"

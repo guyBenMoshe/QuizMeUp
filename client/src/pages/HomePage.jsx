@@ -13,7 +13,7 @@ function HomePage() {
     e.preventDefault();
     setErrorMsg("");
     try {
-      const res = await fetch("http://localhost:5001/api/login", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -38,7 +38,11 @@ function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-100 to-indigo-200 flex items-center justify-center p-6">
       <div className="bg-white/40 backdrop-blur-md shadow-2xl rounded-2xl p-10 w-full max-w-md animate-fade-in">
         <div className="flex justify-center mb-6">
-          <img src={logo} alt="QuizMeUp Logo" className="h-30 drop-shadow-lg animate-[float_2s_ease-in-out_infinite]" />
+          <img
+            src={logo}
+            alt="QuizMeUp Logo"
+            className="h-30 drop-shadow-lg animate-[float_2s_ease-in-out_infinite]"
+          />
         </div>
         {/* <h1 className="text-4xl font-bold text-center text-purple-800 mb-2">
           QuizMeUp
@@ -49,7 +53,9 @@ function HomePage() {
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-800 mb-1">
+              Email
+            </label>
             <input
               type="email"
               value={email}
@@ -60,7 +66,9 @@ function HomePage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">Password</label>
+            <label className="block text-sm font-medium text-gray-800 mb-1">
+              Password
+            </label>
             <input
               type="password"
               value={password}
@@ -70,7 +78,9 @@ function HomePage() {
               required
             />
           </div>
-          {errorMsg && <div className="text-red-600 text-center text-sm">{errorMsg}</div>}
+          {errorMsg && (
+            <div className="text-red-600 text-center text-sm">{errorMsg}</div>
+          )}
 
           <button
             type="submit"

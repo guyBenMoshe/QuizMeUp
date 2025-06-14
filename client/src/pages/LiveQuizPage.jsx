@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 // import { io } from "socket.io-client";
 
-// const socket = io("http://localhost:5001");
 import { socket } from "../socket";
 
 function LiveQuizPage() {

@@ -1,6 +1,9 @@
 // src/socket.js
 import { io } from "socket.io-client";
 
-export const socket = io("http://localhost:5001", {
-  autoConnect: true, // או false אם אתה רוצה לשלוט ידנית
+const socketURL = process.env.REACT_APP_SOCKET_URL || "http://localhost:5001";
+
+// שמירה קבועה שלא יווצר שוב
+export const socket = io(socketURL, {
+  autoConnect: true,
 });

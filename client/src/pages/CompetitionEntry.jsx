@@ -14,7 +14,7 @@ function CompetitionEntry() {
       try {
         const encodedEmail = encodeURIComponent(email);
         const res = await fetch(
-          `http://localhost:5001/api/by-user/${encodedEmail}`
+          `${process.env.REACT_APP_API_URL}/api/by-user/${encodedEmail}`
         );
         const data = await res.json();
         setQuizzes(data);

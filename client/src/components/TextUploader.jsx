@@ -9,6 +9,8 @@ function TextUploader() {
   const [isLoading, setIsLoading] = useState(false);
   const [textId, setTextId] = useState(null);
 
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001";
+
   const email = localStorage.getItem("userEmail");
   const navigate = useNavigate();
 
@@ -23,7 +25,7 @@ function TextUploader() {
 
     try {
       setIsLoading(true);
-      const res = await fetch("http://localhost:5001/api/upload", {
+      const res = await fetch(`${API_URL}/api/upload`, {
         method: "POST",
         body: formData,
       });
@@ -33,7 +35,7 @@ function TextUploader() {
         setText(data.text);
         setResponse("✅ File uploaded and text extracted");
 
-        const saveRes = await fetch("http://localhost:5001/api/text", {
+        const saveRes = await fetch(`${API_URL}/api/text`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: data.text, email }),
@@ -66,7 +68,7 @@ function TextUploader() {
       let currentTextId = textId;
 
       if (!currentTextId) {
-        const saveRes = await fetch("http://localhost:5001/api/text", {
+        const saveRes = await fetch(`${API_URL}/api/text`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: text, email }),
@@ -83,7 +85,7 @@ function TextUploader() {
         }
       }
 
-      const res = await fetch("http://localhost:5001/api/generate-quiz", {
+      const res = await fetch(`${API_URL}/api/generate-quiz`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: text, email, textId: currentTextId }),
@@ -107,12 +109,12 @@ function TextUploader() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 to-purple-200 p-6 flex flex-col items-center justify-start">
       <button
-          onClick={() => navigate("/menu")}
-          className="mt-4 w-3/12 flex items-center justify-center gap-2 border border-purple-500 text-purple-700 py-2 rounded-xl hover:bg-purple-50 transition"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Menu
-        </button>
-        
+        onClick={() => navigate("/menu")}
+        className="mt-4 w-3/12 flex items-center justify-center gap-2 border border-purple-500 text-purple-700 py-2 rounded-xl hover:bg-purple-50 transition"
+      >
+        <ArrowLeft className="w-4 h-4" /> Back to Menu
+      </button>
+
       <div className="bg-white/60 backdrop-blur-xl shadow-2xl rounded-xl p-8 w-full max-w-3xl mt-10">
         <h2 className="text-3xl font-bold text-center text-purple-800 mb-6">
           Upload or Paste Text
@@ -148,7 +150,6 @@ function TextUploader() {
             </>
           )}
         </button>
-
 
         {response && (
           <p className="text-center text-green-700 font-medium mt-4">

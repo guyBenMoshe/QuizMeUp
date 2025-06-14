@@ -23,7 +23,9 @@ function QuizPlay() {
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        const res = await fetch(`http://localhost:5001/api/quiz/${quizId}`);
+        const res = await fetch(
+          `${process.env.REACT_APP_API_URL}/api/quiz/${quizId}`
+        );
         const data = await res.json();
         if (data.questions) {
           setQuestions(data.questions);
@@ -62,15 +64,23 @@ function QuizPlay() {
   };
 
   if (questions.length === 0) {
-    return <div className="text-center mt-20 text-xl text-gray-600">Loading quiz...</div>;
+    return (
+      <div className="text-center mt-20 text-xl text-gray-600">
+        Loading quiz...
+      </div>
+    );
   }
 
   if (isFinished) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-100 to-indigo-200 flex items-center justify-center">
         <div className="bg-white/60 backdrop-blur-lg p-10 rounded-xl shadow-xl text-center">
-          <h2 className="text-4xl font-bold text-purple-800 mb-4">Quiz Completed!</h2>
-          <p className="text-lg text-gray-700">You scored {correctAnswers} out of {questions.length}</p>
+          <h2 className="text-4xl font-bold text-purple-800 mb-4">
+            Quiz Completed!
+          </h2>
+          <p className="text-lg text-gray-700">
+            You scored {correctAnswers} out of {questions.length}
+          </p>
         </div>
       </div>
     );
@@ -93,7 +103,8 @@ function QuizPlay() {
         <div className="space-y-4">
           {shuffledChoices.map((choice, index) => {
             const isSelected = selectedAnswer === choice;
-            let className = "bg-white hover:bg-purple-100 border border-gray-300";
+            let className =
+              "bg-white hover:bg-purple-100 border border-gray-300";
 
             if (selectedAnswer !== null) {
               if (isSelected && isAnswerCorrect) {

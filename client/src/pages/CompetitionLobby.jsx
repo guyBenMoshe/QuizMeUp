@@ -77,7 +77,9 @@ function CompetitionLobby() {
     }
 
     try {
-      const res = await fetch(`http://localhost:5001/api/quiz/${quizId}`);
+      const res = await fetch(
+        `${process.env.REACT_APP_API_URL}/api/quiz/${quizId}`
+      );
       const quiz = await res.json();
       socket.emit("startQuiz", { roomCode, quiz });
       hasStartedQuiz.current = true;

@@ -7,8 +7,12 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 
 # Load NLP
-nlp = spacy.load("en_core_web_sm")
-
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    from spacy.cli import download
+    download("en_core_web_sm")
+    nlp = spacy.load("en_core_web_sm")
 # Detect GPU
 device = 0 if torch.cuda.is_available() else -1
 
@@ -86,7 +90,7 @@ def generate_distractors(question, correct_answer, max_attempts=2):
 def normalize_answers(question, correct, distractors):
     all_answers = [correct] + distractors
     base_prompt = (
-        f"Format these answers for the following question so they all look consistent, concise (1–5 words), and natural:\n"
+        f"Format these answers for the following question so they all look consistent, and natural:\n"
         f"Question: {question}\n"
         f"Answers:\n"
     )
