@@ -8,12 +8,13 @@ function HomePage() {
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001";
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg("");
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/login`, {
+      const res = await fetch(`${API_URL}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

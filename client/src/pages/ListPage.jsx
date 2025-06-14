@@ -5,7 +5,6 @@ import { Upload, History, Trophy, LogOut } from "lucide-react";
 function ListPage() {
   const navigate = useNavigate();
   const email = localStorage.getItem("userEmail");
-
   const handleLogout = () => {
     localStorage.removeItem("userEmail");
     navigate("/");

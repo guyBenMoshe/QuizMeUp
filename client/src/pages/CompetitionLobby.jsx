@@ -16,6 +16,8 @@ function CompetitionLobby() {
   const hasJoined = useRef(false);
   const hasStartedQuiz = useRef(false); // חדש
 
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001";
+
   useEffect(() => {
     if (!roomCode) {
       alert("Missing room code.");
@@ -77,9 +79,7 @@ function CompetitionLobby() {
     }
 
     try {
-      const res = await fetch(
-        `${process.env.REACT_APP_API_URL}/api/quiz/${quizId}`
-      );
+      const res = await fetch(`${API_URL}/api/quiz/${quizId}`);
       const quiz = await res.json();
       socket.emit("startQuiz", { roomCode, quiz });
       hasStartedQuiz.current = true;

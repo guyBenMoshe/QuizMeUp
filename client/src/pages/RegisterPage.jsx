@@ -7,12 +7,12 @@ function RegisterPage() {
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
-
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001";
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg("");
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/register`, {
+      const res = await fetch(`${API_URL}/api/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -8,14 +8,13 @@ function CompetitionEntry() {
   const navigate = useNavigate();
 
   const email = localStorage.getItem("userEmail");
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001";
 
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
         const encodedEmail = encodeURIComponent(email);
-        const res = await fetch(
-          `${process.env.REACT_APP_API_URL}/api/by-user/${encodedEmail}`
-        );
+        const res = await fetch(`${API_URL}/api/by-user/${encodedEmail}`);
         const data = await res.json();
         setQuizzes(data);
       } catch (err) {

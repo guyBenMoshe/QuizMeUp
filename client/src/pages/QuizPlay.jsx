@@ -19,13 +19,11 @@ function QuizPlay() {
   const [shuffledChoices, setShuffledChoices] = useState([]);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState(null);
-
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001";
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        const res = await fetch(
-          `${process.env.REACT_APP_API_URL}/api/quiz/${quizId}`
-        );
+        const res = await fetch(`${API_URL}/api/quiz/${quizId}`);
         const data = await res.json();
         if (data.questions) {
           setQuestions(data.questions);

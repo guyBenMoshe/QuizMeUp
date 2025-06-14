@@ -13,7 +13,7 @@ router.post("/generate-quiz", (req, res) => {
     return res.status(400).json({ error: "Missing content" });
   }
 
-  const scriptPath = path.join(__dirname, "..", "..", "ml", "process_text.py");
+  const scriptPath = path.join(__dirname, "..", "ml", "process_text.py");
   const cmd = `python3 "${scriptPath}" "${content.replace(/"/g, '\\"')}"`;
 
   exec(cmd, async (error, stdout, stderr) => {
