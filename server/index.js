@@ -60,3 +60,7 @@ const PORT = process.env.PORT || 5001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// הארכת זמן לפני סגירת חיבור
+server.keepAliveTimeout = 120000; // 2 דקות
+server.headersTimeout = 130000;
