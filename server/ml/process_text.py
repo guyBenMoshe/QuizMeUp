@@ -12,13 +12,15 @@ nlp = spacy.load("en_core_web_sm")
 # Detect GPU
 device = 0 if torch.cuda.is_available() else -1
 
-# Load models
-qg_tokenizer = AutoTokenizer.from_pretrained("./models/qg")
-qg_model = AutoModelForSeq2SeqLM.from_pretrained("./models/qg")
+# Load models from HuggingFace (ישמרו מהDocker cache ולא יורדו מחדש)
+qg_model_id = "valhalla/t5-base-qg-hl"
+qg_tokenizer = AutoTokenizer.from_pretrained(qg_model_id)
+qg_model = AutoModelForSeq2SeqLM.from_pretrained(qg_model_id)
 qg_pipe = pipeline("text2text-generation", model=qg_model, tokenizer=qg_tokenizer, device=device)
 
-distractor_tokenizer = AutoTokenizer.from_pretrained("./models/dist")
-distractor_model = AutoModelForSeq2SeqLM.from_pretrained("./models/dist")
+distractor_model_id = "MBZUAI/LaMini-T5-738M"
+distractor_tokenizer = AutoTokenizer.from_pretrained(distractor_model_id)
+distractor_model = AutoModelForSeq2SeqLM.from_pretrained(distractor_model_id)
 distractor_pipe = pipeline("text2text-generation", model=distractor_model, tokenizer=distractor_tokenizer, device=device)
 
 # NLP utils
