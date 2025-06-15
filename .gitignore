@@ -12,3 +12,5 @@ __pycache__/
 
 /uploads
 
+# 🤖 ML models - ignore downloaded model files
+server/ml/models/
