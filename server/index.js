@@ -66,16 +66,6 @@ app.get("/", (req, res) => {
   res.send("QuizMeUp server is running!");
 });
 
-const path = require("path");
-
-// ⬇️ הגשה של קבצי React מתוך client/build
-app.use(express.static(path.join(__dirname, "client", "build")));
-
-// ⬇️ הפנייה של כל route שלא תואם API ל-index.html
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "client", "build", "index.html"));
-});
-
 // Start the server
 const PORT = process.env.PORT || 5001;
 
