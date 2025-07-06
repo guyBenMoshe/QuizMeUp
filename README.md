@@ -2,7 +2,7 @@
 
 Final Project - QuizMeUP
 
-Opwn Website: https://quizmeup-client.onrender.com
+Open Website: https://quizmeup-client.onrender.com
 
 run server:
 cd server
